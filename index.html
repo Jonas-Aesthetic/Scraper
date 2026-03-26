@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vyntra Scraper</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#060810;--bg2:#0c0f1a;--bg3:#111520;--bg4:#181d2e;--bg5:#1e2438;
+  --border:rgba(255,255,255,0.055);--border2:rgba(255,255,255,0.11);
+  --text:#dde2f0;--text2:#6b7394;--text3:#363d55;
+  --cyan:#00e5cc;--cyan2:#00ffdf;--cyan-dim:rgba(0,229,204,0.08);--cyan-bdr:rgba(0,229,204,0.2);
+  --red:#ff4d6a;--red-dim:rgba(255,77,106,0.1);
+  --amber:#ffb347;--amber-dim:rgba(255,179,71,0.1);
+  --green:#3ddc84;--green-dim:rgba(61,220,132,0.1);
+  --blue:#4d9fff;--r:12px;--r-sm:7px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");opacity:.4;}
+
+/* SIDEBAR */
+.sidebar{width:220px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;z-index:10;overflow:hidden;}
+.sidebar::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);opacity:.3;animation:scanline 6s linear infinite;pointer-events:none;}
+@keyframes scanline{0%{transform:translateY(-10px)}100%{transform:translateY(100vh)}}
+.brand{padding:26px 22px 22px;border-bottom:1px solid var(--border);}
+.brand-mark{display:flex;align-items:center;gap:10px;margin-bottom:4px;}
+.brand-icon{width:32px;height:32px;border-radius:8px;background:var(--cyan);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.brand-name{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1.5px;color:var(--text);line-height:1;}
+.brand-sub{font-size:10px;color:var(--text3);letter-spacing:.12em;text-transform:uppercase;font-weight:500;margin-left:42px;}
+.nav{padding:14px 12px;flex:1;}
+.nav-section{font-size:9px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.14em;padding:0 10px;margin:14px 0 5px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:var(--r-sm);font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;transition:all .15s;margin-bottom:2px;border:none;background:none;width:100%;text-align:left;}
+.nav-item:hover{background:var(--bg3);color:var(--text);}
+.nav-item.active{background:var(--cyan-dim);color:var(--cyan);border:1px solid var(--cyan-bdr);}
+.nav-item svg{width:15px;height:15px;flex-shrink:0;opacity:.7;}
+.nav-item.active svg{opacity:1;}
+.nav-badge{margin-left:auto;font-size:10px;font-weight:600;padding:1px 7px;border-radius:99px;background:var(--cyan-dim);color:var(--cyan);font-family:'JetBrains Mono',monospace;}
+.sidebar-footer{padding:14px;border-top:1px solid var(--border);}
+.status-pill{display:flex;align-items:center;gap:8px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-sm);padding:9px 12px;}
+.status-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.status-text{font-size:11px;color:var(--text2);font-weight:500;}
+
+/* MAIN */
+.main{flex:1;min-width:0;display:flex;flex-direction:column;position:relative;z-index:1;}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 28px;border-bottom:1px solid var(--border);background:rgba(6,8,16,0.85);backdrop-filter:blur(8px);position:sticky;top:0;z-index:9;}
+.topbar-left h2{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1px;color:var(--text);}
+.topbar-left p{font-size:12px;color:var(--text2);margin-top:1px;}
+.topbar-right{display:flex;align-items:center;gap:8px;}
+.tbtn{display:flex;align-items:center;gap:7px;padding:8px 15px;border-radius:var(--r-sm);font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:all .15s;letter-spacing:.02em;}
+.tbtn-ghost{background:var(--bg3);border:1px solid var(--border);color:var(--text2);}
+.tbtn-ghost:hover{border-color:var(--border2);color:var(--text);}
+.tbtn-cyan{background:var(--cyan);color:#000;font-weight:700;}
+.tbtn-cyan:hover{background:var(--cyan2);transform:translateY(-1px);}
+.tbtn-red{background:var(--red-dim);border:1px solid rgba(255,77,106,.25);color:var(--red);}
+.tbtn-red:hover{background:rgba(255,77,106,.2);}
+.tbtn-amber{background:var(--amber-dim);border:1px solid rgba(255,179,71,.25);color:var(--amber);}
+.tbtn-amber:hover{background:rgba(255,179,71,.2);}
+
+.content{padding:26px 28px;flex:1;}
+.page{display:none;}.page.active{display:block;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+/* EMPTY STATE */
+.empty-state{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-height:420px;text-align:center;
+  background:var(--bg2);border:1px dashed var(--border2);
+  border-radius:var(--r);padding:48px;
+  animation:fadeUp .35s ease both;
+}
+.empty-icon{font-size:48px;margin-bottom:20px;opacity:.5;}
+.empty-title{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:1px;color:var(--text);margin-bottom:8px;}
+.empty-sub{font-size:13px;color:var(--text2);max-width:360px;line-height:1.7;margin-bottom:28px;}
+.upload-zone{
+  border:2px dashed var(--cyan-bdr);border-radius:var(--r);
+  padding:28px 40px;cursor:pointer;transition:all .2s;
+  background:var(--cyan-dim);
+}
+.upload-zone:hover{border-color:var(--cyan);background:rgba(0,229,204,0.12);}
+.upload-zone p{font-size:13px;color:var(--cyan);font-weight:600;}
+.upload-zone span{font-size:11px;color:var(--text2);display:block;margin-top:4px;}
+#fileInput{display:none;}
+
+/* METRICS */
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;animation:fadeUp .35s ease both;}
+.metric{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:20px;position:relative;overflow:hidden;transition:border-color .2s,transform .15s;}
+.metric:hover{border-color:var(--border2);transform:translateY(-2px);}
+.metric-glow{position:absolute;top:-30px;right:-30px;width:80px;height:80px;border-radius:50%;opacity:.12;filter:blur(20px);}
+.metric-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;}
+.metric-ico{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;}
+.ico-cyan{background:var(--cyan-dim);border:1px solid var(--cyan-bdr);}
+.ico-red{background:var(--red-dim);border:1px solid rgba(255,77,106,.2);}
+.ico-amber{background:var(--amber-dim);border:1px solid rgba(255,179,71,.2);}
+.ico-green{background:var(--green-dim);border:1px solid rgba(61,220,132,.2);}
+.metric-trend{font-size:11px;font-weight:600;padding:2px 7px;border-radius:99px;}
+.trend-up{background:var(--green-dim);color:var(--green);}
+.trend-cyan{background:var(--cyan-dim);color:var(--cyan);}
+.trend-amber{background:var(--amber-dim);color:var(--amber);}
+.metric-val{font-family:'Bebas Neue',sans-serif;font-size:42px;color:var(--text);line-height:1;margin-bottom:4px;}
+.metric-val.cyan{color:var(--cyan);}
+.metric-lbl{font-size:12px;color:var(--text2);font-weight:400;}
+.metric-bar-wrap{margin-top:14px;height:3px;background:var(--bg4);border-radius:99px;overflow:hidden;}
+.metric-bar-fill{height:100%;border-radius:99px;}
+
+/* DATA SECTION */
+.data-section{animation:fadeUp .35s ease .1s both;}
+.section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.section-title{font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:.8px;color:var(--text);}
+
+/* SUMMARY CARDS */
+.summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px;}
+.sum-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:18px 20px;transition:border-color .2s;}
+.sum-card:hover{border-color:var(--border2);}
+.sum-card-title{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px;}
+.sum-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);}
+.sum-row:last-child{border-bottom:none;}
+.sum-key{font-size:12px;color:var(--text2);}
+.sum-val{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text);font-weight:500;}
+.sum-val.cyan{color:var(--cyan);}
+.sum-val.amber{color:var(--amber);}
+.sum-val.green{color:var(--green);}
+
+/* TABLE */
+.tbl-controls{display:flex;gap:10px;margin-bottom:14px;align-items:center;}
+.search-wrap{position:relative;flex:1;}
+.search-ico{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);pointer-events:none;}
+.tbl-controls input,.tbl-controls select{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text);font-family:'Outfit',sans-serif;font-size:13px;padding:9px 12px;outline:none;width:100%;transition:border-color .2s,background .2s;}
+.tbl-controls input{padding-left:36px;}
+.tbl-controls input::placeholder{color:var(--text3);}
+.tbl-controls input:focus,.tbl-controls select:focus{border-color:var(--cyan);background:var(--bg3);}
+.tbl-controls select{width:auto;cursor:pointer;}
+.tbl-controls select option{background:var(--bg2);}
+.count-badge{font-size:11px;color:var(--text2);padding:0 4px;white-space:nowrap;}
+
+.tab-nav{display:flex;gap:4px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-sm);padding:4px;width:fit-content;margin-bottom:14px;}
+.tab-btn{font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:.5px;padding:6px 16px;border-radius:6px;cursor:pointer;border:none;background:transparent;color:var(--text2);transition:background .15s,color .15s;}
+.tab-btn.active{background:var(--bg4);color:var(--text);}
+.tab-btn.active.opp{background:var(--cyan-dim);color:var(--cyan);border:1px solid var(--cyan-bdr);}
+
+.tbl-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;}
+table{width:100%;border-collapse:collapse;}
+thead th{background:var(--bg3);padding:10px 16px;text-align:left;font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:.08em;color:var(--text3);border-bottom:1px solid var(--border);white-space:nowrap;}
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s;}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:hover{background:rgba(255,255,255,.018);}
+tbody tr.is-opp{background:rgba(0,229,204,0.025);}
+tbody tr.is-opp:hover{background:rgba(0,229,204,0.05);}
+tbody td{padding:11px 16px;vertical-align:middle;}
+.nome-cell{font-size:13px;font-weight:500;color:var(--text);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.addr-cell{font-size:11px;color:var(--text3);margin-top:2px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.phone{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text2);}
+.site-link{font-size:12px;color:var(--blue);text-decoration:none;display:block;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.site-link:hover{text-decoration:underline;}
+.opp-tag{display:inline-flex;align-items:center;gap:4px;background:var(--cyan-dim);border:1px solid var(--cyan-bdr);color:var(--cyan);font-size:10px;font-weight:600;font-family:'JetBrains Mono',monospace;padding:3px 8px;border-radius:99px;white-space:nowrap;}
+.no-site-tag{font-size:11px;font-weight:600;font-family:'JetBrains Mono',monospace;color:var(--cyan);}
+.dash-cell{color:var(--text3);font-size:12px;}
+.star{color:var(--amber);font-size:12px;}
+.cat-tag{font-size:10px;background:var(--bg4);border:1px solid var(--border);color:var(--text2);padding:2px 8px;border-radius:99px;display:inline-block;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.pagination{display:flex;justify-content:space-between;align-items:center;padding:11px 16px;border-top:1px solid var(--border);background:var(--bg3);}
+.page-info{font-size:12px;color:var(--text3);}
+.page-info strong{color:var(--text2);}
+.page-btns{display:flex;gap:8px;}
+.page-btn{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text2);font-family:'Outfit',sans-serif;font-size:11px;font-weight:600;padding:6px 14px;cursor:pointer;transition:all .2s;}
+.page-btn:hover:not(:disabled){border-color:var(--cyan);color:var(--cyan);background:var(--cyan-dim);}
+.page-btn:disabled{opacity:.3;cursor:default;}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:100;display:flex;align-items:center;justify-content:center;animation:fadeUp .2s ease both;}
+.modal-overlay.hidden{display:none;}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);padding:28px;width:440px;max-width:90vw;}
+.modal h3{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:.8px;color:var(--text);margin-bottom:8px;}
+.modal p{font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:20px;}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;z-index:200;display:flex;align-items:center;gap:10px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r-sm);padding:12px 18px;font-size:13px;color:var(--text);animation:fadeUp .25s ease both;box-shadow:0 8px 32px rgba(0,0,0,.4);}
+.toast.hidden{display:none;}
+.toast-dot{width:8px;height:8px;border-radius:50%;}
+
+/* --- RESPONSIVIDADE E ADAPTAÇÕES MOBILE --- */
+
+/* Ajuste para telas menores (Tablets e Laptops pequenos) */
+@media (max-width: 1100px) {
+    .metrics { grid-template-columns: repeat(2, 1fr); }
+    .summary-grid { grid-template-columns: 1fr; }
+    .sidebar { width: 80px; }
+    .brand-name, .brand-sub, .nav-item span, .nav-section, .status-text, .nav-badge { 
+        display: none; 
+    }
+    .brand { padding: 20px; display: flex; justify-content: center; }
+    .nav-item { justify-content: center; padding: 12px; }
+    .nav-item svg { width: 20px; height: 20px; margin: 0; }
+    .status-pill { justify-content: center; padding: 10px; }
+}
+
+/* Ajuste para Mobile (Smartphones) */
+@media (max-width: 768px) {
+    body { flex-direction: column; }
+
+    /* Transformando a Sidebar em Top Header no Mobile */
+    .sidebar {
+        width: 100%;
+        height: auto;
+        position: fixed;
+        bottom: 0; /* Menu estilo App na parte inferior */
+        top: auto;
+        flex-direction: row;
+        border-right: none;
+        border-top: 1px solid var(--border);
+        padding: 0;
+        justify-content: space-around;
+    }
+
+    .brand, .nav-section, .sidebar-footer, .sidebar::after { display: none; }
+    
+    .nav {
+        display: flex;
+        flex-direction: row;
+        width: 100%;
+        justify-content: space-around;
+        padding: 5px;
+    }
+
+    .nav-item {
+        flex-direction: column;
+        gap: 4px;
+        font-size: 10px;
+        align-items: center;
+        padding: 8px 0;
+        margin-bottom: 0;
+        width: 60px;
+    }
+    
+    .nav-item span { display: block; font-size: 9px; } /* Reativa texto curto no mobile */
+
+    /* Main Content Adjustments */
+    .main { padding-bottom: 70px; } /* Espaço para a barra inferior */
+    
+    .topbar {
+        padding: 12px 20px;
+        flex-direction: column;
+        gap: 12px;
+        align-items: flex-start;
+    }
+
+    .topbar-right {
+        width: 100%;
+        overflow-x: auto;
+        padding-bottom: 5px;
+        justify-content: flex-start;
+    }
+
+    .tbtn { padding: 6px 12px; white-space: nowrap; }
+
+    .content { padding: 15px; }
+
+    /* Métricas em coluna única no mobile */
+    .metrics { 
+        grid-template-columns: 1fr; 
+        gap: 10px;
+    }
+
+    .metric-val { font-size: 32px; }
+
+    /* Tabela Responsiva (Scroll Horizontal) */
+    .tbl-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    table { min-width: 600px; } /* Garante que a tabela não esmague os dados */
+
+    .tbl-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .tbl-controls select { width: 100%; }
+
+    .tab-nav { width: 100%; justify-content: center; }
+
+    /* Modais e Toasts */
+    .modal {
+        width: 95%;
+        padding: 20px;
+    }
+
+    .modal-actions {
+        flex-direction: column;
+    }
+
+    .modal-actions button { width: 100%; }
+}
+
+/* Ajustes para Navegadores Modernos (Blur e Performance) */
+@supports not (backdrop-filter: blur(8px)) {
+    .topbar, .modal-overlay {
+        background: var(--bg);
+    }
+}
+
+/* Melhoria de toque para Mobile */
+.nav-item, .tbtn, .page-btn {
+    min-height: 40px; /* Previne erros de clique no touch */
+}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="brand">
+    <div class="brand-mark">
+      <div class="brand-icon">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1L14 4.5V11.5L8 15L2 11.5V4.5L8 1Z" stroke="#000" stroke-width="1.5" fill="none"/><circle cx="8" cy="8" r="2.5" fill="#000"/></svg>
+      </div>
+      <span class="brand-name">Vyntra</span>
+    </div>
+    <div class="brand-sub">Clínicas Estética</div>
+  </div>
+  <nav class="nav">
+    <div class="nav-section">Navegação</div>
+    <button class="nav-item active" onclick="showPage('dashboard',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Dashboard
+    </button>
+    <button class="nav-item" onclick="showPage('leads',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Leads
+      <span class="nav-badge" id="navBadge">0</span>
+    </button>
+    <div class="nav-section">Dados</div>
+    <button class="nav-item" onclick="triggerUpload()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Importar JSON
+    </button>
+    <button class="nav-item" onclick="confirmClear()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+      Limpar Dados
+    </button>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="status-pill">
+      <div class="status-dot" id="statusDot"></div>
+      <span class="status-text" id="statusText">Sem dados</span>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <h2 id="pageTitle">Dashboard</h2>
+      <p id="pageSubtitle">Importe um arquivo JSON para começar</p>
+    </div>
+    <div class="topbar-right">
+      <button class="tbtn tbtn-red" id="btnClear" onclick="confirmClear()" style="display:none">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+        Limpar
+      </button>
+      <button class="tbtn tbtn-amber" onclick="triggerUpload()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Importar JSON
+      </button>
+      <input type="file" id="fileInput" accept=".json" onchange="handleFile(event)" style="display:none">
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- DASHBOARD PAGE -->
+    <div class="page active" id="page-dashboard">
+
+      <!-- EMPTY STATE -->
+      <div class="empty-state" id="emptyDash">
+        <div class="empty-icon">🏥</div>
+        <div class="empty-title">Nenhum dado carregado</div>
+        <div class="empty-sub">Importe o arquivo <code style="background:var(--bg4);padding:2px 6px;border-radius:4px;color:var(--cyan);font-size:12px;">leads_estetica_100.json</code> gerado pelo scraper para visualizar o dashboard completo.</div>
+        <div class="upload-zone" onclick="triggerUpload()">
+          <p>📂 Clique para importar JSON</p>
+          <span>Arraste ou clique · Suporte a leads_estetica*.json</span>
+        </div>
+      </div>
+
+      <!-- DATA STATE -->
+      <div id="dashData" style="display:none">
+        <div class="metrics">
+          <div class="metric">
+            <div class="metric-glow" style="background:var(--cyan)"></div>
+            <div class="metric-head"><div class="metric-ico ico-cyan">🏥</div><span class="metric-trend trend-cyan" id="m1badge">SP</span></div>
+            <div class="metric-val cyan" id="m1val">0</div>
+            <div class="metric-lbl">Total de Leads</div>
+            <div class="metric-bar-wrap"><div class="metric-bar-fill" id="m1bar" style="background:var(--cyan)"></div></div>
+          </div>
+          <div class="metric">
+            <div class="metric-glow" style="background:var(--amber)"></div>
+            <div class="metric-head"><div class="metric-ico ico-amber">🎯</div><span class="metric-trend trend-amber" id="m2badge">0%</span></div>
+            <div class="metric-val" id="m2val">0</div>
+            <div class="metric-lbl">Sem Site — Oportunidades</div>
+            <div class="metric-bar-wrap"><div class="metric-bar-fill" id="m2bar" style="background:var(--amber)"></div></div>
+          </div>
+          <div class="metric">
+            <div class="metric-glow" style="background:var(--green)"></div>
+            <div class="metric-head"><div class="metric-ico ico-green">📞</div><span class="metric-trend trend-up" id="m3badge">0%</span></div>
+            <div class="metric-val" id="m3val">0</div>
+            <div class="metric-lbl">Com Telefone</div>
+            <div class="metric-bar-wrap"><div class="metric-bar-fill" id="m3bar" style="background:var(--green)"></div></div>
+          </div>
+          <div class="metric">
+            <div class="metric-glow" style="background:var(--red)"></div>
+            <div class="metric-head"><div class="metric-ico ico-red">⭐</div><span class="metric-trend trend-up" id="m4badge">—</span></div>
+            <div class="metric-val" id="m4val">—</div>
+            <div class="metric-lbl">Nota Média Google</div>
+            <div class="metric-bar-wrap"><div class="metric-bar-fill" id="m4bar" style="background:var(--red)"></div></div>
+          </div>
+        </div>
+
+        <div class="data-section">
+          <div class="summary-grid">
+            <div class="sum-card">
+              <div class="sum-card-title">Resumo de Contato</div>
+              <div class="sum-row"><span class="sum-key">Com telefone</span><span class="sum-val green" id="s-tel">—</span></div>
+              <div class="sum-row"><span class="sum-key">Sem telefone</span><span class="sum-val" id="s-notel">—</span></div>
+              <div class="sum-row"><span class="sum-key">Com site</span><span class="sum-val" id="s-site">—</span></div>
+              <div class="sum-row"><span class="sum-key">Sem site</span><span class="sum-val cyan" id="s-nosite">—</span></div>
+            </div>
+            <div class="sum-card">
+              <div class="sum-card-title">Avaliações Google</div>
+              <div class="sum-row"><span class="sum-key">Nota média</span><span class="sum-val amber" id="s-avg">—</span></div>
+              <div class="sum-row"><span class="sum-key">Nota 5.0 ⭐⭐⭐⭐⭐</span><span class="sum-val green" id="s-r5">—</span></div>
+              <div class="sum-row"><span class="sum-key">Nota 4.5–5.0</span><span class="sum-val" id="s-r45">—</span></div>
+              <div class="sum-row"><span class="sum-key">Abaixo de 4.5</span><span class="sum-val" id="s-rlow">—</span></div>
+            </div>
+            <div class="sum-card">
+              <div class="sum-card-title">Top Categorias</div>
+              <div id="s-cats"></div>
+            </div>
+          </div>
+
+          <!-- TOP OPORTUNIDADES -->
+          <div class="section-head"><span class="section-title">🎯 Top Oportunidades — Sem Site</span></div>
+          <div class="tbl-wrap" style="margin-bottom:24px;">
+            <table>
+              <thead><tr><th>Nome</th><th>Telefone</th><th>Categoria</th><th>Nota</th><th>Avaliações</th></tr></thead>
+              <tbody id="oppBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEADS PAGE -->
+    <div class="page" id="page-leads">
+
+      <div class="empty-state" id="emptyLeads">
+        <div class="empty-icon">📋</div>
+        <div class="empty-title">Nenhum lead importado</div>
+        <div class="empty-sub">Importe um arquivo JSON gerado pelo scraper para listar os leads aqui.</div>
+        <div class="upload-zone" onclick="triggerUpload()">
+          <p>📂 Clique para importar JSON</p>
+          <span>Arraste ou clique · Suporte a leads_estetica*.json</span>
+        </div>
+      </div>
+
+      <div id="leadsData" style="display:none">
+        <div class="tab-nav">
+          <button class="tab-btn active opp" onclick="setTab('opp',this)">🎯 Sem Site</button>
+          <button class="tab-btn" onclick="setTab('all',this)">Todos</button>
+          <button class="tab-btn" onclick="setTab('com',this)">Com Site</button>
+        </div>
+        <div class="tbl-controls">
+          <div class="search-wrap">
+            <svg class="search-ico" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <input type="text" id="searchInput" placeholder="Buscar por nome ou endereço..." oninput="renderLeads()">
+          </div>
+          <select id="sortLeads" onchange="renderLeads()">
+            <option value="">Padrão</option>
+            <option value="nota">Maior nota</option>
+            <option value="aval">Mais avaliações</option>
+          </select>
+          <span class="count-badge" id="leadsCount"></span>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Status</th><th>Nome / Endereço</th><th>Categoria</th><th>Telefone</th><th>Site</th><th>Nota</th><th>Aval.</th></tr></thead>
+            <tbody id="leadsBody"></tbody>
+          </table>
+          <div class="pagination">
+            <div class="page-info"><strong id="pgInfo"></strong></div>
+            <div class="page-btns">
+              <button class="page-btn" id="btnPrev" onclick="changeLeadsPage(-1)">← Anterior</button>
+              <button class="page-btn" id="btnNext" onclick="changeLeadsPage(1)">Próxima →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL CONFIRM CLEAR -->
+<div class="modal-overlay hidden" id="clearModal">
+  <div class="modal">
+    <h3>Limpar todos os dados?</h3>
+    <p>Todos os leads importados serão removidos do dashboard. Você poderá importar um novo arquivo JSON após limpar.</p>
+    <div class="modal-actions">
+      <button class="tbtn tbtn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="tbtn tbtn-red" onclick="clearData()">Confirmar — Limpar</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast hidden" id="toast">
+  <div class="toast-dot" id="toastDot"></div>
+  <span id="toastMsg"></span>
+</div>
+
+<script>
+let LEADS = [];
+let leadsPage = 0;
+let currentTab = 'opp';
+const PER = 15;
+
+// ── PAGE NAV ──
+const TITLES = {
+  dashboard: ['Dashboard','Visão geral dos leads importados'],
+  leads: ['Leads','Lista completa de leads coletados']
+};
+function showPage(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  if (btn) btn.classList.add('active');
+  document.getElementById('pageTitle').textContent = TITLES[id][0];
+  document.getElementById('pageSubtitle').textContent = LEADS.length > 0
+    ? LEADS.length + ' leads carregados — ' + (new Date()).toLocaleDateString('pt-BR')
+    : 'Importe um arquivo JSON para começar';
+  if (id === 'leads') renderLeads();
+}
+
+// ── FILE UPLOAD ──
+function triggerUpload() {
+  document.getElementById('fileInput').click();
+}
+
+function handleFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      const parsed = JSON.parse(ev.target.result);
+      // Support both { leads: [...] } and plain array
+      const arr = Array.isArray(parsed) ? parsed : (parsed.leads || parsed.data || []);
+      if (!arr.length) { showToast('red','Nenhum lead encontrado no arquivo.'); return; }
+      LEADS = arr.map(l => ({
+        nome: l.nome || l.name || '—',
+        telefone_original: l.telefone_original || l.phone || null,
+        telefone_formatado: l.telefone_formatado || null,
+        site: l.site || l.website || null,
+        nota: l.nota || l.rating || null,
+        total_avaliacoes: l.total_avaliacoes || l.reviews || null,
+        endereco: l.endereco || l.address || null,
+        categoria: l.categoria || l.category || null,
+        tem_site: !!(l.site || l.website),
+      }));
+      loadDashboard();
+      showToast('green', LEADS.length + ' leads importados com sucesso!');
+      document.getElementById('fileInput').value = '';
+    } catch(err) {
+      showToast('red','Erro ao ler o arquivo. Verifique se é um JSON válido.');
+    }
+  };
+  reader.readAsText(file);
+}
+
+function loadDashboard() {
+  if (!LEADS.length) return;
+
+  const total = LEADS.length;
+  const semSite = LEADS.filter(l => !l.tem_site);
+  const comTel = LEADS.filter(l => l.telefone_original || l.telefone_formatado);
+  const comSite = LEADS.filter(l => l.tem_site);
+  const withRating = LEADS.filter(l => l.nota);
+  const avg = withRating.length ? (withRating.reduce((s,l) => s + l.nota, 0) / withRating.length) : 0;
+  const pctSem = Math.round(semSite.length / total * 100);
+  const pctTel = Math.round(comTel.length / total * 100);
+
+  // Metrics
+  document.getElementById('m1val').textContent = total;
+  document.getElementById('m1badge').textContent = 'SP';
+  document.getElementById('m1bar').style.width = '100%';
+
+  document.getElementById('m2val').textContent = semSite.length;
+  document.getElementById('m2badge').textContent = pctSem + '%';
+  document.getElementById('m2bar').style.width = pctSem + '%';
+
+  document.getElementById('m3val').textContent = comTel.length;
+  document.getElementById('m3badge').textContent = pctTel + '%';
+  document.getElementById('m3bar').style.width = pctTel + '%';
+
+  document.getElementById('m4val').textContent = avg ? avg.toFixed(1) : '—';
+  document.getElementById('m4badge').textContent = avg ? '★ ' + avg.toFixed(1) : '—';
+  document.getElementById('m4bar').style.width = avg ? (avg / 5 * 100) + '%' : '0%';
+
+  // Summary
+  document.getElementById('s-tel').textContent = comTel.length;
+  document.getElementById('s-notel').textContent = total - comTel.length;
+  document.getElementById('s-site').textContent = comSite.length;
+  document.getElementById('s-nosite').textContent = semSite.length;
+  document.getElementById('s-avg').textContent = avg ? avg.toFixed(2) + ' ★' : '—';
+  document.getElementById('s-r5').textContent = LEADS.filter(l => l.nota === 5).length;
+  document.getElementById('s-r45').textContent = LEADS.filter(l => l.nota >= 4.5 && l.nota < 5).length;
+  document.getElementById('s-rlow').textContent = LEADS.filter(l => l.nota && l.nota < 4.5).length;
+
+  // Top categories
+  const cats = {};
+  LEADS.forEach(l => { if (l.categoria) cats[l.categoria] = (cats[l.categoria] || 0) + 1; });
+  const topCats = Object.entries(cats).sort((a,b) => b[1]-a[1]).slice(0,4);
+  document.getElementById('s-cats').innerHTML = topCats.map(([k,v]) =>
+    `<div class="sum-row"><span class="sum-key" style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${k}</span><span class="sum-val">${v}</span></div>`
+  ).join('');
+
+  // Top oportunidades (sem site, sorted by rating)
+  const opps = semSite.sort((a,b) => (b.nota||0) - (a.nota||0)).slice(0, 8);
+  document.getElementById('oppBody').innerHTML = opps.map(l => `
+    <tr class="is-opp">
+      <td><div class="nome-cell" title="${l.nome}">${l.nome}</div></td>
+      <td><span class="phone">${l.telefone_original || '<span class="dash-cell">—</span>'}</span></td>
+      <td><span class="cat-tag">${l.categoria || '—'}</span></td>
+      <td><span class="star">★</span> ${l.nota ?? '—'}</td>
+      <td style="font-size:12px;color:var(--text2)">${l.total_avaliacoes ? l.total_avaliacoes.toLocaleString('pt-BR') : '—'}</td>
+    </tr>`).join('');
+
+  // Show/hide states
+  document.getElementById('emptyDash').style.display = 'none';
+  document.getElementById('dashData').style.display = 'block';
+  document.getElementById('emptyLeads').style.display = 'none';
+  document.getElementById('leadsData').style.display = 'block';
+  document.getElementById('btnClear').style.display = 'flex';
+  document.getElementById('navBadge').textContent = total;
+  document.getElementById('statusDot').style.background = 'var(--cyan)';
+  document.getElementById('statusDot').style.boxShadow = '0 0 6px var(--cyan)';
+  document.getElementById('statusText').textContent = total + ' leads';
+  document.getElementById('pageSubtitle').textContent = total + ' leads carregados — ' + (new Date()).toLocaleDateString('pt-BR');
+
+  leadsPage = 0;
+  renderLeads();
+}
+
+// ── LEADS TABLE ──
+function setTab(tab, btn) {
+  currentTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => { b.classList.remove('active','opp'); });
+  btn.classList.add('active');
+  if (tab === 'opp') btn.classList.add('opp');
+  leadsPage = 0;
+  renderLeads();
+}
+
+function getFiltered() {
+  const q = document.getElementById('searchInput')?.value.toLowerCase() || '';
+  const s = document.getElementById('sortLeads')?.value || '';
+  let list = [...LEADS];
+  if (currentTab === 'opp') list = list.filter(l => !l.tem_site);
+  else if (currentTab === 'com') list = list.filter(l => l.tem_site);
+  if (q) list = list.filter(l =>
+    (l.nome||'').toLowerCase().includes(q) || (l.endereco||'').toLowerCase().includes(q)
+  );
+  if (s === 'nota') list.sort((a,b) => (b.nota||0) - (a.nota||0));
+  else if (s === 'aval') list.sort((a,b) => (b.total_avaliacoes||0) - (a.total_avaliacoes||0));
+  return list;
+}
+
+function renderLeads() {
+  if (!LEADS.length) return;
+  const list = getFiltered();
+  const start = leadsPage * PER;
+  const slice = list.slice(start, start + PER);
+  const semSite = LEADS.filter(l => !l.tem_site).length;
+  const comSite = LEADS.filter(l => l.tem_site).length;
+
+  // Update tab labels
+  const tabs = document.querySelectorAll('.tab-btn');
+  if (tabs[0]) tabs[0].textContent = '🎯 Sem Site (' + semSite + ')';
+  if (tabs[1]) tabs[1].textContent = 'Todos (' + LEADS.length + ')';
+  if (tabs[2]) tabs[2].textContent = 'Com Site (' + comSite + ')';
+  // Re-apply active classes
+  tabs.forEach(b => b.classList.remove('active','opp'));
+  const activeIdx = currentTab === 'opp' ? 0 : currentTab === 'all' ? 1 : 2;
+  if (tabs[activeIdx]) {
+    tabs[activeIdx].classList.add('active');
+    if (currentTab === 'opp') tabs[activeIdx].classList.add('opp');
+  }
+
+  document.getElementById('leadsBody').innerHTML = slice.map(l => `
+    <tr class="${!l.tem_site ? 'is-opp' : ''}">
+      <td>${!l.tem_site ? '<span class="opp-tag">✦ Opp</span>' : '<span class="dash-cell">—</span>'}</td>
+      <td>
+        <div class="nome-cell" title="${l.nome}">${l.nome}</div>
+        <div class="addr-cell">${l.endereco || ''}</div>
+      </td>
+      <td><span class="cat-tag" title="${l.categoria||''}">${l.categoria || '—'}</span></td>
+      <td><span class="phone">${l.telefone_original || '<span class="dash-cell">—</span>'}</span></td>
+      <td>${l.site
+        ? `<a class="site-link" href="${l.site}" target="_blank">${l.site.replace(/https?:\/\/(www\.)?/,'').split('/')[0]}</a>`
+        : '<span class="no-site-tag">SEM SITE</span>'
+      }</td>
+      <td><span class="star">★</span> ${l.nota ?? '—'}</td>
+      <td style="font-size:12px;color:var(--text2)">${l.total_avaliacoes ? l.total_avaliacoes.toLocaleString('pt-BR') : '—'}</td>
+    </tr>`).join('');
+
+  const total = list.length;
+  document.getElementById('pgInfo').innerHTML = `<strong>${Math.min(start+1,total)}–${Math.min(start+PER,total)}</strong> de ${total}`;
+  document.getElementById('leadsCount').textContent = total + ' leads';
+  document.getElementById('btnPrev').disabled = leadsPage === 0;
+  document.getElementById('btnNext').disabled = start + PER >= total;
+}
+
+function changeLeadsPage(d) { leadsPage += d; renderLeads(); }
+
+// ── CLEAR DATA ──
+function confirmClear() {
+  document.getElementById('clearModal').classList.remove('hidden');
+}
+function closeModal() {
+  document.getElementById('clearModal').classList.add('hidden');
+}
+function clearData() {
+  LEADS = [];
+  leadsPage = 0;
+  currentTab = 'opp';
+  document.getElementById('emptyDash').style.display = 'flex';
+  document.getElementById('dashData').style.display = 'none';
+  document.getElementById('emptyLeads').style.display = 'flex';
+  document.getElementById('leadsData').style.display = 'none';
+  document.getElementById('btnClear').style.display = 'none';
+  document.getElementById('navBadge').textContent = '0';
+  document.getElementById('statusDot').style.background = 'var(--green)';
+  document.getElementById('statusDot').style.boxShadow = '0 0 6px var(--green)';
+  document.getElementById('statusText').textContent = 'Sem dados';
+  document.getElementById('pageSubtitle').textContent = 'Importe um arquivo JSON para começar';
+  closeModal();
+  showToast('amber','Dados limpos. Pronto para nova importação.');
+}
+
+// ── TOAST ──
+let toastTimer;
+function showToast(color, msg) {
+  const t = document.getElementById('toast');
+  const dot = document.getElementById('toastDot');
+  const colors = { green: 'var(--green)', red: 'var(--red)', amber: 'var(--amber)', cyan: 'var(--cyan)' };
+  dot.style.background = colors[color] || colors.cyan;
+  document.getElementById('toastMsg').textContent = msg;
+  t.classList.remove('hidden');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.add('hidden'), 3500);
+}
+
+// Close modal on overlay click
+document.getElementById('clearModal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+</script>
+</body>
+</html>
